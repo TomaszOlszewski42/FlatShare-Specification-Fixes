@@ -75,7 +75,7 @@ Dokument zawiera specyfikację wymagań funkcjonalnych oraz projekt architektury
 FlatShare odpowiada na typowy problem rynku najmu pokoi: duża liczba ogłoszeń, brak ustandaryzowanej informacji o preferencjach domowników oraz konieczność wielokrotnej, powtarzalnej komunikacji przed podjęciem decyzji o wynajmie. System ma zmniejszyć „tarcie” po obu stronach procesu:
 \begin{itemize}
     \item \textbf{Lokator} szybciej znajduje ogłoszenia pasujące do jego potrzeb (filtry + dopasowywanie) oraz ma bezpośredni kanał kontaktu z właścicielem.
-    \item \textbf{Właściciel} publikuje ogłoszenia w spójnej formie, kontroluje dostępność i może akceptować rezerwacje lub włączyć tryb \textit{Instant Book}.
+    \item \textbf{Właściciel} publikuje ogłoszenia w spójnej formie, kontroluje dostępność i może akceptować rezerwacje.
     \item \textbf{Administrator} utrzymuje jakość platformy poprzez obsługę zgłoszeń naruszeń i blokowanie kont łamiących regulamin.
 \end{itemize}
 
@@ -117,7 +117,6 @@ Poniżej przedstawiono wymagania biznesowe zagregowane według aktorów systemu.
     \item \textbf{US-W2:} Jako Właściciel, chcę określić preferowany profil lokatora (np. student, osoba pracująca), aby uniknąć nieporozumień.
     \item \textbf{US-W3:} Jako Właściciel, chcę zarządzać dostępnością ogłoszenia (publikować/ukrywać/archiwizować), gdy mieszkanie zostanie wynajęte.
     \item \textbf{US-W4:} Jako Właściciel, chcę zaakceptować lub odrzucić rezerwację, aby kontrolować kto wynajmuje pokój.
-    \item \textbf{US-W5:} Jako Właściciel, chcę włączyć opcję \textit{Instant Book}, aby automatyzować rezerwacje bez ręcznej akceptacji.
 \end{itemize}
 
 \subsection{Aktor: Administrator}
@@ -157,7 +156,6 @@ z dalszym opisem modeli, stanów oraz komunikacji API.
 \begin{itemize}
     \item \textbf{AC1:} Lokator może złożyć prośbę o rezerwację tylko dla ogłoszenia w stanie \texttt{ACTIVE} i dostępnego terminu.
     \item \textbf{AC2:} Właściciel może zaakceptować lub odrzucić rezerwację; decyzja zmienia stan \texttt{Booking} odpowiednio na \texttt{PENDING\_PAYMENT} lub \texttt{REJECTED}.
-    \item \textbf{AC3:} Wariant \textit{Instant Book} pomija etap akceptacji i przechodzi bezpośrednio do \texttt{PENDING\_PAYMENT}.
 \end{itemize}
 
 \subsubsection{US-L5: Płatność za rezerwację}
@@ -248,8 +246,7 @@ przez decyzję Właściciela, aż po opłacenie i potwierdzenie. W module wystę
 \textbf{System Płatności} (realizacja obciążenia) oraz \textbf{Serwis Powiadomień} (informowanie stron o zdarzeniach).
 
 \noindent\textbf{Rezerwacja jako obiekt biznesowy.} Kluczowym obiektem jest \texttt{Booking} (w API opisywany jako „wynajem”),
-który przechowuje status procesu. Wariant standardowy wymaga akceptacji Właściciela (\texttt{PENDING\_APPROVAL}),
-natomiast \textit{Instant Book} umożliwia automatyczne przejście do płatności (\texttt{PENDING\_PAYMENT}).
+który przechowuje status procesu. Wariant standardowy wymaga akceptacji Właściciela (\texttt{PENDING\_APPROVAL}).
 
 \noindent\textbf{Płatność i powiadomienia.} Płatność jest śledzona w osobnym obiekcie \texttt{Payment} i wpływa na stan rezerwacji.
 W praktyce moduł wysyła powiadomienia po kluczowych zdarzeniach: utworzenie rezerwacji, akceptacja/odrzucenie,
@@ -317,7 +314,6 @@ Szczegółowy opis kluczowych przypadków użycia wg szablonu Cockburna (główn
 8. Serwis Powiadomień wysyła potwierdzenia do Lokatora i Właściciela.
 \\ \hline
 \textbf{Scenariusze alternatywne} &
-\textbf{4a. Instant Book:} Jeśli Właściciel włączył Instant Book, system pomija akceptację: rezerwacja powstaje od razu jako \texttt{PENDING\_PAYMENT}, \textcolor{red}{blokuje termin} i przechodzi do kroku 6. \newline
 \textbf{5b. Brak reakcji/Timeout płatności:} Właściciel nie odpowiada lub \textcolor{red}{Lokator nie opłaci rezerwacji w wyznaczonym czasie (np. 15 min)}. System ustawia status \texttt{EXPIRED}, \textcolor{red}{zwalnia blokadę terminu} i powiadamia Lokatora. \newline
 \textbf{7a. Błąd płatności:} Płatność nieudana. System ustawia status \texttt{PAYMENT\_FAILED} i umożliwia ponowienie lub anulowanie.
 \\ \hline
@@ -498,11 +494,10 @@ W systemie FlatShare kluczowe procesy dotyczą: publikacji ogłoszeń, rezerwacj
   \label{fig:state-booking}
 \end{figure}
 
-\textbf{Opis:} Rezerwacja odzwierciedla proces biznesowy wynajmu: od złożenia prośby przez Lokatora, przez akceptację Właściciela (lub Instant Book), aż po płatność i potwierdzenie. Diagram obejmuje również zakończenia nietypowe: odrzucenie, wygaśnięcie, błąd płatności \textcolor{red}{oraz wymuszone anulowanie administracyjne}.
+\textbf{Opis:} Rezerwacja odzwierciedla proces biznesowy wynajmu: od złożenia prośby przez Lokatora, przez akceptację Właściciela , aż po płatność i potwierdzenie. Diagram obejmuje również zakończenia nietypowe: odrzucenie, wygaśnięcie, błąd płatności \textcolor{red}{oraz wymuszone anulowanie administracyjne}.
 \begin{itemize}
   \item \textbf{Ścieżka standardowa:} \texttt{PENDING\_APPROVAL} $\rightarrow$ \texttt{PENDING\_PAYMENT} $\rightarrow$ \texttt{CONFIRMED}.
   \item \textbf{Alternatywy:} \texttt{REJECTED} (odrzucenie przez Właściciela), \texttt{EXPIRED} (brak reakcji w czasie \textcolor{red}{lub upływ czasu na płatność w stanie \texttt{PENDING\_PAYMENT}}), \texttt{PAYMENT\_FAILED} (nieudana płatność z możliwością ponowienia).
-  \item \textbf{Szczególny przypadek:} \texttt{Instant Book} pomija etap \texttt{PENDING\_APPROVAL} i przechodzi bezpośrednio do \texttt{PENDING\_PAYMENT}.
   \item \textbf{Nietypowe zakończenie:} anulowanie procesu (np. kolizja dostępności terminu lub rezygnacja) jako stan końcowy typu \texttt{CANCELLED}.
   \item \textcolor{red}{\textbf{Wymuszone anulowanie:} W przypadku blokady konta Właściciela przez administratora, system automatycznie wymusza przejście ze stanu \texttt{CONFIRMED} do \texttt{CANCELLED}, co uruchamia procedurę zwrotu środków.}
 \end{itemize}
@@ -570,10 +565,10 @@ W systemie FlatShare kluczowe procesy dotyczą: publikacji ogłoszeń, rezerwacj
   \label{fig:act-booking-payment}
 \end{figure}
 
-\textbf{Opis:} Proces rezerwacji jest kluczowym procesem biznesowym Lokatora. Diagram uwzględnia standardowy przepływ z akceptacją Właściciela, wariant \texttt{Instant Book} oraz alternatywy: odrzucenie, wygaśnięcie, błąd płatności i kolizję dostępności.
+\textbf{Opis:} Proces rezerwacji jest kluczowym procesem biznesowym Lokatora. Diagram uwzględnia standardowy przepływ z akceptacją Właściciela, oraz alternatywy: odrzucenie, wygaśnięcie, błąd płatności i kolizję dostępności.
 \begin{itemize}
   \item \textbf{Główna ścieżka:} Lokator inicjuje rezerwację $\rightarrow$ system tworzy \texttt{Booking} jako \texttt{PENDING\_APPROVAL} $\rightarrow$ Właściciel akceptuje $\rightarrow$ \texttt{PENDING\_PAYMENT} $\rightarrow$ płatność $\rightarrow$ \texttt{CONFIRMED} $\rightarrow$ aktualizacja dostępności i powiadomienia.
-  \item \textbf{Alternatywy:} \texttt{Instant Book} (bez akceptacji), \texttt{REJECTED} (odrzucenie), \texttt{EXPIRED} (brak reakcji), \texttt{PAYMENT\_FAILED} (możliwość ponowienia), kolizja dostępności (anulowanie procesu).
+  \item \textbf{Alternatywy:} \texttt{REJECTED} (odrzucenie), \texttt{EXPIRED} (brak reakcji), \texttt{PAYMENT\_FAILED} (możliwość ponowienia), kolizja dostępności (anulowanie procesu).
   \item \textbf{Stan szczególny:} przejście do \texttt{CONFIRMED} jest możliwe dopiero po poprawnej płatności.
 \end{itemize}
 
@@ -1353,7 +1348,6 @@ Aby domknąć proces z diagramu przypadków użycia (akceptacja/odrzucenie, anul
     \item \texttt{POST /api/v1/rentals/\{rentalId\}/pay} --- inicjacja płatności (zwraca URL do bramki lub dane redirectu).
     \item \texttt{GET /api/v1/rentals/\{rentalId\}} --- podgląd statusu rezerwacji (używane również przez integrację płatności do weryfikacji stanu).
 \end{itemize}
-Wariant \textit{Instant Book} skutkuje tym, że po utworzeniu rezerwacji system może od razu zwrócić stan \texttt{PENDING\_PAYMENT}, bez konieczności wywołania \texttt{/accept}.
 
 
 \subsection{Przykładowe żądanie}
