@@ -1258,7 +1258,7 @@ ocenie stopnia zgodności ofert z wykorzystaniem algorytmu punktowego
 i zwracane w postaci stronicowanej.
 %===========================================================%
 
-\section{Wystawienie ogłoszenia}
+\section{Wystawienie ogłoszenia i zarządzanie nim}
 
 Niniejszy rozdział opisuje proces wystawienia ogłoszenia przez użytkownika
 pełniącego rolę wynajmującego. Opis dotyczy wyłącznie logiki biznesowej
@@ -1330,7 +1330,7 @@ Content-Type: application/json
 \end{lstlisting}
 
 \begin{lstlisting}[style=http,caption={Żądanie HTTP — pobranie szczegółów ogłoszenia}]
-GET /api/v1/listings
+GET /api/v1/listings/{listingId}
 Authorization: Bearer <JWT>
 Content-Type: application/json
 Accept: application/json
@@ -1391,7 +1391,7 @@ W trakcie przetwarzania żądania mogą wystąpić następujące błędy:
 
 \noindent\textbf{Pozostałe operacje na zasobie \texttt{Listing}.} W praktycznym użyciu systemu niezbędne są również endpointy do pobierania i zarządzania widocznością ogłoszeń (US-L1, US-W3). Poniżej zebrano kluczowe ścieżki (bez rozwijania diagramów sekwencji):
 \begin{itemize}
-    \item \texttt{GET /api/v1/listings?city=Warszawa\&district=Praga\&street=Puławska\&aptNumber=37}
+    \item \texttt{GET /api/v1/listings?city=Warszawa\&district=Praga\&street=Puławska\&aptNumber=42}
     \begin{lstlisting}[style=json,caption={Odpowiedź żądania}]
     {
       "title": "Pokój przy metrze",
@@ -1406,7 +1406,7 @@ W trakcie przetwarzania żądania mogą wystąpić następujące błędy:
         "city": "Warszawa",
         "district": "Mokotów",
         "street": "Puławska 21"
-        "aptNumber": "37"
+        "aptNumber": "42"
       },
       attributes: {
           "petsAllowed": true,
@@ -1416,7 +1416,14 @@ W trakcie przetwarzania żądania mogą wystąpić następujące błędy:
       }
     }
     \end{lstlisting}
-
+    Możliwe jest filtrowanie po następujących parametrach:
+    \begin{itemize}
+        \item city
+        \item district
+        \item street
+        \item aptNumber
+        \item ownerID
+    \end{itemize}
     \item \texttt{PATCH /api/v1/listings/\{listingId\}} -- edycja pól ogłoszenia (tylko właściciel zasobu). W tym żądaniu podaje się tylko te pola które chcemy poddać edycji. Pola Id nie można zedytować. Nie ustalono kiedy można edytować ogłoszenie. Odpowiedź jest taka sama jak w prypadku zwykłego pobrania szczegółów.
     \begin{lstlisting}[style=json,caption={Żądanie edycji ogłoszenia}]
     {
@@ -1425,18 +1432,21 @@ W trakcie przetwarzania żądania mogą wystąpić następujące błędy:
     }
     \end{lstlisting}
 
-    \item \texttt{POST /api/v1/listings/\{listingId\}/submit} -- podanie ogłoszenia pod recenzję administratora
+    \item \texttt{GET /api/v1/listings/\{listingId\}} -- pobranie listingu o podanym id
 
-    \item \texttt{POST /api/v1/listings/\{listingId\}/request-fixes} -- żądanie poprawek przez administratora
+    \item \texttt{PATCH /api/v1/listings/\{listingId\}/submit} -- podanie ogłoszenia pod recenzję administratora
 
-    \item \texttt{POST /api/v1/listings/\{listingId\}/approve} -- akceptacja ogłoszenia przez administratora
+    \item \texttt{PATCH /api/v1/listings/\{listingId\}/request-fixes} -- żądanie poprawek przez administratora
 
-    \item \texttt{POST /api/v1/listings/\{listingId\}/hide} -- ukrycie ogłoszenia
+    \item \texttt{PATCH /api/v1/listings/\{listingId\}/approve} -- akceptacja ogłoszenia przez administratora
 
-    \item \texttt{POST /api/v1/listings/\{listingId\}/publish} -- opublikowanie ukrytego ogłoszenia
+    \item \texttt{PATCH /api/v1/listings/\{listingId\}/hide} -- ukrycie ogłoszenia
 
-    \item \texttt{POST /api/v1/listings/\{listingId\}/archive} -- archiwizacja ogłoszenia
+    \item \texttt{PATCH /api/v1/listings/\{listingId\}/publish} -- opublikowanie ukrytego ogłoszenia
 
+    \item \texttt{PATCH /api/v1/listings/\{listingId\}/archive} -- archiwizacja ogłoszenia
+
+    \item \texttt{GET /api/v1/listings/all} -- pobranie wszystkich ogłoszeń 
 \end{itemize}
 Te endpointy pozwalają zaimplementować cykl ogłoszenia ogłoszenia.
 Tożsamość (jwt bearer) użytkownika wywołującego metodę pozwala określić
